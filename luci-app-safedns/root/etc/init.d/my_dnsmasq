@@ -1,0 +1,75 @@
+#!/bin/sh /etc/rc.common
+
+MY_DNSMASQ_PATH=/usr/local/sbin/my_dnsmasq
+MY_DNSMASQ_PID_FILE=/var/run/my_dnsmasq.pid
+DEFAULT_PROXY_IP=195.46.39.39
+MY_CONFIG_FILENAME=safedns
+MY_CONFIG_SECTION_MAIN=safedns
+
+name=`basename "$MY_DNSMASQ_PATH"` # remove?
+
+
+USE_PROCD=1
+
+START=55
+start_service() {
+	echo   starting "$name"   # remove?
+	logger starting "$name"   # remove?
+
+	proxy_ip=`uci -q get "$MY_CONFIG_FILENAME"."$MY_CONFIG_SECTION_MAIN".proxy_ip || echo $DEFAULT_PROXY_IP`
+
+	"$MY_DNSMASQ_PATH" --port=53 --cache-size=0 --no-resolv --server="$proxy_ip"
+}
+
+STOP=55
+stop_service() {
+	echo   stopping "$name"   # remove?
+	logger stopping "$name"   # remove?
+
+	send_signal TERM # SIGTERM -> exit
+}
+
+reload_service() {
+	echo   reloading "$name"  # remove?
+	logger reloading "$name"  # remove?
+
+	send_signal HUP # SIGHUP -> reload config
+
+	cur_ip=`uci -q get network.lan.ipaddr`
+	old_ip=`uci -q get "$MY_CONFIG_FILENAME"."$MY_CONFIG_SECTION_MAIN".blockpage_local_ip`
+
+	blockpage_ip_token=`   uci -q get "$MY_CONFIG_FILENAME.$MY_CONFIG_SECTION_MAIN.blockpage_ip_token"   `
+	blockpage_port=`       uci -q get "$MY_CONFIG_FILENAME.$MY_CONFIG_SECTION_MAIN.blockpage_port"       `
+	blockpage_local_port=` uci -q get "$MY_CONFIG_FILENAME.$MY_CONFIG_SECTION_MAIN.blockpage_local_port" `
+
+	uci -q del_list dhcp.lan.dhcp_option="6,$old_ip"
+	uci -q add_list dhcp.lan.dhcp_option="6,$cur_ip"
+
+	uci -q set "$MY_CONFIG_FILENAME"."$MY_CONFIG_SECTION_MAIN".blockpage_local_ip="$cur_ip"   # useless option
+
+	uci -q set firewall."$MY_CONFIG_FILENAME".src_dip="$blockpage_ip_token"
+	uci -q set firewall."$MY_CONFIG_FILENAME".src_dport="$blockpage_port"
+	uci -q set firewall."$MY_CONFIG_FILENAME".dest_ip="$cur_ip"
+	uci -q set firewall."$MY_CONFIG_FILENAME".dest_port="$blockpage_local_port"
+
+	uci -q set uhttpd."$MY_CONFIG_FILENAME".listen_http="$cur_ip:$blockpage_local_port"
+
+	uci -q commit
+	/etc/init.d/dnsmasq  reload
+	/etc/init.d/firewall reload 2> /dev/null
+	/etc/init.d/uhttpd   reload
+}
+
+send_signal() {
+	if [ -f "$MY_DNSMASQ_PID_FILE" ]
+	then
+		kill -s $1 `cat "$MY_DNSMASQ_PID_FILE"`
+	else
+		echo --- can\'t find $MY_DNSMASQ_PID_FILE ---   # remove?
+	fi
+}
+
+#service_triggers()
+#{
+#	procd_add_reload_trigger "$MY_CONFIG_FILENAME"
+#}

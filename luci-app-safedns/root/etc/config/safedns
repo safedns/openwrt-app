@@ -1,0 +1,10 @@
+config user "safedns"
+	option enabled 0
+	option api_url "www.safedns.com/api/json"
+	option proxy_ip "195.46.39.39"
+	option proxy_port 1253
+	option blockpage_ip_token "195.46.39.3"
+	option blockpage_ip_main  "195.46.39.2"
+	option blockpage_port 80
+	option blockpage_local_ip "192.168.1.1"
+	option blockpage_local_port 8080
