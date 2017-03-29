@@ -126,6 +126,7 @@ endef
 define Package/$(PKG_NAME)/postrm
 #!/bin/sh
 	uci -q delete firewall.$(MY_CONFIG_FILENAME)
+	uci -q delete firewall.$(MY_CONFIG_FILENAME)_dns_redirect
 	uci -q delete uhttpd.$(MY_CONFIG_FILENAME)
 	uci commit
 
