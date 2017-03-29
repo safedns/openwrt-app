@@ -52,6 +52,8 @@ reload_service() {
 	uci -q set firewall."$MY_CONFIG_FILENAME".dest_ip="$cur_ip"
 	uci -q set firewall."$MY_CONFIG_FILENAME".dest_port="$blockpage_local_port"
 
+	uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect.dest_ip="$cur_ip"
+
 	uci -q set uhttpd."$MY_CONFIG_FILENAME".listen_http="$cur_ip:$blockpage_local_port"
 
 	uci -q commit

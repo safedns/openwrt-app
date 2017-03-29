@@ -91,6 +91,12 @@ define Package/$(PKG_NAME)/postinst
 		uci set firewall.$(MY_CONFIG_FILENAME).proto=tcp
 	#}
 
+	uci set firewall.$(MY_CONFIG_FILENAME)_dns_redirect=redirect
+	uci set firewall.$(MY_CONFIG_FILENAME)_dns_redirect.name=SafeDNS_dns_redirect
+	uci set firewall.$(MY_CONFIG_FILENAME)_dns_redirect.src=lan
+	uci set firewall.$(MY_CONFIG_FILENAME)_dns_redirect.src_dport=53
+	uci set firewall.$(MY_CONFIG_FILENAME)_dns_redirect.dest_ip="$$cur_ip"
+
 	#uci -q get uhttpd.$(MY_CONFIG_FILENAME) > /dev/null || {
 		uci set uhttpd.$(MY_CONFIG_FILENAME)=uhttpd
 		uci set uhttpd.$(MY_CONFIG_FILENAME).listen_http="$$cur_ip:$$blockpage_local_port"
