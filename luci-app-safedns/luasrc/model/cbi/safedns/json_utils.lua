@@ -43,6 +43,7 @@ function get_profiles(api_url, login, password)
 			url = "https://" .. api_url,
 			method = "POST",
 			headers = {
+				[  "user-agent"  ] = "SafeDNS OpenWRT 0.1",
 				["Authorization" ] = "Basic " .. (mime.b64(login..":"..password)),
 				["Content-Type"  ] = "application/json",
 				["Content-Length"] = payload:len()
