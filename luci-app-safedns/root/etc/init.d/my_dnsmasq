@@ -52,7 +52,17 @@ reload_service() {
 	uci -q set firewall."$MY_CONFIG_FILENAME".dest_ip="$cur_ip"
 	uci -q set firewall."$MY_CONFIG_FILENAME".dest_port="$blockpage_local_port"
 
-	uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect.dest_ip="$cur_ip"
+	enabled=`uci -q get "$MY_CONFIG_FILENAME"."$MY_CONFIG_SECTION_MAIN".enabled`
+	if [ "$enabled" == "1" ]
+	then
+		uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect=redirect
+		uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect.name=SafeDNS_dns_redirect
+		uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect.src=lan
+		uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect.src_dport=53
+		uci -q set firewall."$MY_CONFIG_FILENAME"_dns_redirect.dest_ip="$cur_ip"
+	else
+		uci -q delete firewall."$MY_CONFIG_FILENAME"_dns_redirect
+	fi
 
 	uci -q set uhttpd."$MY_CONFIG_FILENAME".listen_http="$cur_ip:$blockpage_local_port"
 
