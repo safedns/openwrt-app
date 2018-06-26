@@ -1,0 +1,203 @@
+#!/bin/sh /etc/rc.common
+
+safedns_PATH=/usr/local/sbin/safedns
+safedns_PID_FILE=/var/run/safedns.pid
+DEFAULT_PROXY_IP=195.46.39.39
+DNSPROXY_NAME=safedns
+
+name=`basename "$safedns_PATH"` # remove?
+
+
+USE_PROCD=1
+
+check_service() {
+	cur_ip=`uci -q get network.lan.ipaddr`
+
+	touch /etc/config/safedns
+	if [ -z `uci -q get safedns.@safedns[0]` ]
+	then
+		uci -q add safedns safedns > /dev/null
+		echo --- section \"safedns\" added to \"safedns\" config ---
+	else
+		echo --- section \"safedns\" already exists in \"safedns\" config ---
+	fi
+
+	##### for unknown dns-server #####
+	#prog=`netstat -planW | grep -m 1 ":53" | grep -o "\w*$$"`
+	#prog=`netstat -planW | grep      ":53" | grep -o "\w*$$"`
+	#kill `pidof $$prog`
+	#echo --- $$prog killed (port 53) ---
+	##################################
+
+	##### for dnsmasq #####
+	if [ -f /etc/rc.d/S??dnsmasq ]
+	then
+		echo --- dnsmasq found in /etc/rc.d ---
+		uci -q set safedns.@safedns[0].dnsmasq_port="`uci -q get dhcp.@dnsmasq[0].port`"
+		uci -q set dhcp.@dnsmasq[0].port=0
+		uci -q add_list dhcp.lan.dhcp_option="6,$cur_ip"
+		uci -q commit
+		/etc/init.d/dnsmasq reload
+		echo --- dnsmasq DNS disabled ---
+	fi
+	#######################
+
+	if [ -z `uci -q get ucitrack.@safedns[0]` ]
+	then
+		uci -q add ucitrack  safedns > /dev/null
+		uci -q set ucitrack.@safedns[0].init=$(DNSPROXY_NAME)
+		uci -q commit
+		echo --- ucitrack section \"safedns\" added ---
+	else
+		echo --- ucitrack section \"safedns\" already exists ---
+	fi
+
+	if [ -z "`uci -q get ucitrack.@network[0].affects | grep safedns`" ]
+	then
+		uci -q add_list ucitrack.@network[0].affects=safedns
+		uci -q commit
+		echo --- ucitrack: \"network\"   now   affects \"safedns\" config ---
+	else
+		echo --- ucitrack: \"network\" already affects \"safedns\" config ---
+	fi
+
+
+	uci -q set safedns.safedns.blockpage_local_ip="$cur_ip"   # useless option
+	uci commit
+	echo --- blockpage local ip = lan ip ---
+
+	blockpage_ip_token=`uci -q get safedns.safedns.blockpage_ip_token`
+	blockpage_port=`uci -q get safedns.safedns.blockpage_port`
+	blockpage_local_port=`uci -q get safedns.safedns.blockpage_local_port`
+
+	#uci -q get firewall.safedns > /dev/null || {
+		uci set firewall.safedns=redirect
+		uci set firewall.safedns.name=SafeDNS_blockpage_redirect_for_br_lan
+		uci set firewall.safedns.src=lan
+		uci set firewall.safedns.src_dip="$blockpage_ip_token"
+		uci set firewall.safedns.src_dport="$blockpage_port"
+		uci set firewall.safedns.dest_ip="$cur_ip"
+		uci set firewall.safedns.dest_port="$blockpage_local_port"
+		uci set firewall.safedns.proto=tcp
+	#}
+
+	#uci -q get uhttpd.safedns > /dev/null || {
+		uci set uhttpd.safedns=uhttpd
+		uci set uhttpd.safedns.listen_http="$cur_ip:$blockpage_local_port"
+		uci set uhttpd.safedns.redirect_https=0
+		uci set uhttpd.safedns.home=/www/safedns
+		uci set uhttpd.safedns.max_requests=3
+		uci set uhttpd.safedns.max_connections=100
+		uci set uhttpd.safedns.cgi_prefix=/cgi-bin
+		uci set uhttpd.safedns.script_timeout=60
+		uci set uhttpd.safedns.network_timeout=30
+		uci set uhttpd.safedns.http_keepalive=20
+		uci set uhttpd.safedns.tcp_keepalive=1
+		uci set uhttpd.safedns.ubus_prefix=/ubus
+		uci set uhttpd.safedns.index_page=index.html
+		uci set uhttpd.safedns.error_page=/index.html
+	#}
+
+	uci commit
+
+	/etc/init.d/firewall reload 2> /dev/null
+	echo --- blockpage redirection enabled ---
+
+	/etc/init.d/uhttpd reload
+	echo --- blockpage server enabled ---
+
+}
+
+START=55
+start_service() {
+	echo   starting "$name"   # remove?
+	logger starting "$name"   # remove?
+
+#	if [ -z `uci -q get safedns.safedns.enabled` ]
+#	then
+#		check_service
+#	fi
+
+	##### for dnsmasq #####
+	if [ -f /etc/rc.d/S??dnsmasq ]
+	then
+		echo --- dnsmasq found in /etc/rc.d ---
+		cur_ip=`uci -q get network.lan.ipaddr`
+		uci -q set safedns.@saved_options[0].dnsmasq_port="`uci -q get dhcp.@dnsmasq[0].port`"
+		uci -q set dhcp.@dnsmasq[0].port=0
+		uci -q add_list dhcp.lan.dhcp_option="6,$cur_ip"
+		uci -q commit
+		/etc/init.d/dnsmasq reload
+		echo --- dnsmasq DNS disabled ---
+	fi
+	#######################
+
+	proxy_ip=`uci -q get safedns.safedns.proxy_ip || echo $DEFAULT_PROXY_IP`
+
+	"$safedns_PATH" --port=53 --cache-size=0 --no-resolv --server="$proxy_ip"
+}
+
+STOP=55
+stop_service() {
+	echo   stopping "$name"   # remove?
+	logger stopping "$name"   # remove?
+
+	send_signal TERM # SIGTERM -> exit
+}
+
+reload_service() {
+	echo   reloading "$name"  # remove?
+	logger reloading "$name"  # remove?
+
+	send_signal HUP # SIGHUP -> reload config
+
+	cur_ip=`uci -q get network.lan.ipaddr`
+	old_ip=`uci -q get safedns.safedns.blockpage_local_ip`
+
+	blockpage_ip_token=`uci -q get safedns.safedns.blockpage_ip_token`
+	blockpage_port=`uci -q get safedns.safedns.blockpage_port`
+	blockpage_local_port=`uci -q get safedns.safedns.blockpage_local_port`
+
+	uci -q del_list dhcp.lan.dhcp_option="6,$old_ip"
+	uci -q add_list dhcp.lan.dhcp_option="6,$cur_ip"
+
+	uci -q set safedns.safedns.blockpage_local_ip="$cur_ip"   # useless option
+
+	uci -q set firewall.safedns.src_dip="$blockpage_ip_token"
+	uci -q set firewall.safedns.src_dport="$blockpage_port"
+	uci -q set firewall.safedns.dest_ip="$cur_ip"
+	uci -q set firewall.safedns.dest_port="$blockpage_local_port"
+
+	enabled=`uci -q get safedns.safedns.enabled`
+	if [ "$enabled" == "1" ]
+	then
+		uci -q set firewall.safedns_dns_redirect=redirect
+		uci -q set firewall.safedns_dns_redirect.name=SafeDNS_dns_redirect
+		uci -q set firewall.safedns_dns_redirect.src=lan
+		uci -q set firewall.safedns_dns_redirect.src_dport=53
+		uci -q set firewall.safedns_dns_redirect.dest_ip="$cur_ip"
+	else
+		uci -q delete firewall.safedns_dns_redirect
+	fi
+
+	uci -q set uhttpd.safedns.listen_http="$cur_ip:$blockpage_local_port"
+
+	uci -q commit
+	/etc/init.d/dnsmasq  reload
+	/etc/init.d/firewall reload 2> /dev/null
+	/etc/init.d/uhttpd   reload
+}
+
+send_signal() {
+	if [ -f "$safedns_PID_FILE" ]
+	then
+		kill -s $1 `cat "$safedns_PID_FILE"`
+	else
+		echo --- can\'t find $safedns_PID_FILE ---   # remove?
+	fi
+}
+
+#service_triggers()
+#{
+#	procd_add_reload_trigger safedns
+#}

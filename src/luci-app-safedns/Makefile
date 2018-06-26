@@ -4,16 +4,16 @@ PKG_VERSION:=1
 PKG_RELEASE:=1
 
 PKG_LICENSE:=GPL-2.0 GPL-3.0
-PKG_MAINTAINER:=Leonid Lagunov <lagunov@safedns.com>
+PKG_MAINTAINER:=Dmitry Zubarev <zubarev@safedns.com>
 
 LUCI_TITLE:=SafeDNS Cloud Content Filter
 LUCI_DESCRIPTION:=Free for personal use Cloud Content Filter module allows you to filter unwanted websites and protect your network and individual devices from Internet threats like malware, botnets, phishing and so on. In commercial version additional features are available, like scheduler, different filtering policies for individual devices, ads blocking, block page customization, and many more. Visit www.safedns.com to see full list of SafeDNS features.
-LUCI_DEPENDS:=+libuci +luci-lib-httpclient +luci-lib-json +luasec
+LUCI_DEPENDS:=+libuci +luci-lib-httpclient +luci-lib-json +luasec +safedns
 
 MY_CONFIG_FILENAME:=safedns
 MY_CONFIG_SECTION_MAIN:=safedns
 MY_CONFIG_SECTION_SAVE:=saved_options
-DNSPROXY_NAME:=my_dnsmasq
+DNSPROXY_NAME:=safedns
 
 
 PKG_NAME:=$(notdir ${CURDIR})
@@ -76,9 +76,9 @@ define Package/$(PKG_NAME)/postinst
 	uci commit
 	echo --- blockpage local ip = lan ip ---
 
-	blockpage_ip_token=`   uci -q get $(MY_CONFIG_FILENAME).$(MY_CONFIG_SECTION_MAIN).blockpage_ip_token   `
-	blockpage_port=`       uci -q get $(MY_CONFIG_FILENAME).$(MY_CONFIG_SECTION_MAIN).blockpage_port       `
-	blockpage_local_port=` uci -q get $(MY_CONFIG_FILENAME).$(MY_CONFIG_SECTION_MAIN).blockpage_local_port `
+	blockpage_ip_token=`uci -q get $(MY_CONFIG_FILENAME).$(MY_CONFIG_SECTION_MAIN).blockpage_ip_token`
+	blockpage_port=`uci -q get $(MY_CONFIG_FILENAME).$(MY_CONFIG_SECTION_MAIN).blockpage_port`
+	blockpage_local_port=`uci -q get $(MY_CONFIG_FILENAME).$(MY_CONFIG_SECTION_MAIN).blockpage_local_port`
 
 	#uci -q get firewall.$(MY_CONFIG_FILENAME) > /dev/null || {
 		uci set firewall.$(MY_CONFIG_FILENAME)=redirect
@@ -158,7 +158,6 @@ define Package/$(PKG_NAME)/postrm
 endef
 
 
-#include ../../luci.mk
-include ../../../luci.mk
+include luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature

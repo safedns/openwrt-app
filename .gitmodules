@@ -1,3 +1,0 @@
-[submodule "luci-app-safedns/src"]
-	path = luci-app-safedns/src
-	url = git@github.com:safedns/openwrt-dnsmasq.git
