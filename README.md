@@ -43,3 +43,7 @@ cores number plus one. `V=s` is for verbose output.
 
 When building is complete you can find the packages at `bin/packages/$ARCH/custom`,
 where $ARCH is your target architecture.
+
+## For vendors
+
+If you are a networking hardware vendor, we ask you to set user agent so that it contains hardware model and firmware version. In order to do it you should modify the [source](https://github.com/safedns/openwrt-app/blob/master/src/luci-app-safedns/luasrc/model/cbi/safedns/json_utils.lua#L46) before building.
