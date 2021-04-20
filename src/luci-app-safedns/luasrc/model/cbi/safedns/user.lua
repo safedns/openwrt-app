@@ -12,25 +12,27 @@ end
 
 local m = Map(MY_CONFIG_FILENAME, translate("SafeDNS"))
 
-local    login_saved = uci.get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN,    "login")
-local password_saved = uci.get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "password")
+local uci = luci.model.uci.cursor()
+
+local    login_saved = uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN,    "login")
+local password_saved = uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "password")
 
 m.on_before_commit = function(self)
 	print_dbg("--- on_before_commit ---")
 	print_dbg("login_saved = [%s], password_saved = [%s]"
 	          % {tostring(login_saved), tostring(password_saved)})
 
-	local    login = m.uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN,    "login")
-	local password = m.uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "password")
+	local    login = uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN,    "login")
+	local password = uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "password")
 	print_dbg("login = [%s], password = [%s]"
 	          % {tostring(login), tostring(password)})
 
 	if login_saved ~= login or password_saved ~= password then
 		local default_token = fill_profiles(login, password)
 		if default_token then
-			m.uci:set(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "default_token", default_token)
+			uci:set(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "default_token", default_token)
 		else
-			m.uci:delete(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "default_token")
+			uci:delete(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "default_token")
 		end
 		--m.uci:commit(MY_CONFIG_FILENAME)
 	end
@@ -95,7 +97,7 @@ profile = device2profile:option(ListValue, "token", "Profile")
 function fill_profiles(login, password)
 	require "luci/model/cbi/safedns/json_utils"
 
-	local api_url = uci.get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "api_url") or "n/a"
+	local api_url = uci:get(MY_CONFIG_FILENAME, MY_CONFIG_SECTION_MAIN, "api_url") or "n/a"
 	login    = login    or "n/a"
 	password = password or "n/a"
 
