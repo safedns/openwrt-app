@@ -18,6 +18,10 @@ DNSPROXY_NAME:=safedns
 
 PKG_NAME:=$(notdir ${CURDIR})
 
+define Package/$(PKG_NAME)/conffiles
+/etc/config/safedns
+endef
+
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
 	cur_ip=`uci -q get network.lan.ipaddr`

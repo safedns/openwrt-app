@@ -52,8 +52,8 @@ MAKE_FLAGS := \
 	PREFIX="/usr"
 
 define Package/safedns/install
-	$(INSTALL_DIR) $(1)/usr/local/sbin
-	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/safedns $(1)/usr/local/sbin/
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/safedns $(1)/usr/sbin/
 endef
 
 $(eval $(call BuildPackage,safedns))

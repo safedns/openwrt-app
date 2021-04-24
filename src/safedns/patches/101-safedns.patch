@@ -125,7 +125,7 @@ diff -Nur a/src/dnsmasq.c b/src/dnsmasq.c
  int main (int argc, char **argv)
  {
 +  #ifdef SAFEDNS_LOG
-+  my_syslog(LOG_INFO, "==========  start  ==========");
++  my_syslog(LOG_INFO, "==========  start safedns ==========");
 +  #endif // SAFEDNS_LOG
 +
    int bind_fallback = 0;

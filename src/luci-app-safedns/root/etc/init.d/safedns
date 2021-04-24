@@ -1,12 +1,8 @@
 #!/bin/sh /etc/rc.common
 
-safedns_PATH=/usr/local/sbin/safedns
-safedns_PID_FILE=/var/run/safedns.pid
+PID_FILE=/var/run/safedns.pid
 DEFAULT_PROXY_IP=195.46.39.39
 DNSPROXY_NAME=safedns
-
-name=`basename "$safedns_PATH"` # remove?
-
 
 USE_PROCD=1
 
@@ -134,7 +130,15 @@ start_service() {
 
 	proxy_ip=`uci -q get safedns.safedns.proxy_ip || echo $DEFAULT_PROXY_IP`
 
-	"$safedns_PATH" --port=53 --cache-size=0 --no-resolv --server="$proxy_ip"
+	chmod 644 /etc/config/safedns
+	safedns --port=53 --cache-size=0 --no-resolv --server="$proxy_ip"
+
+	#procd_open_instance
+	#procd_set_param command safedns --port=53 --cache-size=0 --no-resolv --server="$proxy_ip"
+	#procd_set_param file "/etc/config/safedns"
+	#procd_set_param user dnsmasq
+	#procd_set_param pidfile $PID_FILE
+	#procd_close_instance
 }
 
 STOP=55
@@ -142,14 +146,17 @@ stop_service() {
 	echo   stopping "$name"   # remove?
 	logger stopping "$name"   # remove?
 
-	send_signal TERM # SIGTERM -> exit
+	#procd_send_signal safedns SIGTERM
+	send_signal SIGTERM # SIGTERM -> exit
 }
 
 reload_service() {
 	echo   reloading "$name"  # remove?
 	logger reloading "$name"  # remove?
 
-	send_signal HUP # SIGHUP -> reload config
+	chmod 644 /etc/config/safedns
+	send_signal SIGHUP # SIGHUP -> reload config
+	#procd_send_signal safedns
 
 	cur_ip=`uci -q get network.lan.ipaddr`
 	old_ip=`uci -q get safedns.safedns.blockpage_local_ip`
@@ -183,17 +190,18 @@ reload_service() {
 	uci -q set uhttpd.safedns.listen_http="$cur_ip:$blockpage_local_port"
 
 	uci -q commit
+
 	/etc/init.d/dnsmasq  reload
 	/etc/init.d/firewall reload 2> /dev/null
 	/etc/init.d/uhttpd   reload
 }
 
 send_signal() {
-	if [ -f "$safedns_PID_FILE" ]
+	if [ -f "$PID_FILE" ]
 	then
-		kill -s $1 `cat "$safedns_PID_FILE"`
+		kill -s $1 `cat "$PID_FILE"`
 	else
-		echo --- can\'t find $safedns_PID_FILE ---   # remove?
+		echo --- can\'t find $PID_FILE ---   # remove?
 	fi
 }
 
