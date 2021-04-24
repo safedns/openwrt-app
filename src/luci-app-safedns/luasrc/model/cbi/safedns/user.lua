@@ -5,9 +5,9 @@ MY_CONFIG_SECTION_MAIN = "safedns"
 
 
 function print_dbg(str)
-	dbg = io.open("/tmp/luci.debug", "a")
-	dbg:write(string.format("%s\n",str))
-	dbg:close()
+--	dbg = io.open("/tmp/luci.debug", "a")
+--	dbg:write(string.format("%s\n",str))
+--	dbg:close()
 end
 
 local m = Map(MY_CONFIG_FILENAME, translate("SafeDNS"))
