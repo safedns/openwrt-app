@@ -1,18 +1,19 @@
 require "luci.json"
 require "luci.httpclient"
 
-
+--[[
 function print_dbg(str)
 	dbg = io.open("/tmp/luci.debug", "a")
 	dbg:write(string.format("%s\n",str))
 	dbg:close()
 end
-
+--]]
 --[[ rPrint(struct, [limit], [indent])   Recursively print arbitrary data.
 	Set limit (default 100) to stanch infinite loops.
 	Indents tables as [KEY] VALUE, nested tables as [KEY] [KEY]...[KEY] VALUE
 	Set indent ("") to prefix each line:    Mytable [KEY] [KEY]...[KEY] VALUE
 --]]
+--[[
 function rPrint(s, l, i) -- recursive Print (structure, limit, indent)
 	l = (l) or 100; i = i or "";	-- default item limit, indent string
 	if (l<1) then print_dbg "ERROR: Item limit reached."; return l-1 end;
@@ -25,8 +26,7 @@ function rPrint(s, l, i) -- recursive Print (structure, limit, indent)
 	end
 	return l
 end	
-
-
+--]]
 
 local https = require "ssl.https"
 local request = {id = "1", method = "profiles", jsonrpc = "2.0"}
@@ -36,7 +36,7 @@ function get_profiles(api_url, login, password)
 	local decoder = luci.json.Decoder()
 
 	local payload = luci.json.encode(request)--:gsub(":",": ")
-	print_dbg("Request: " .. payload)
+	--print_dbg("Request: " .. payload)
 
 	if https then
 		https.request{
@@ -52,10 +52,10 @@ function get_profiles(api_url, login, password)
 			sink = decoder:sink(),
 			protocol = "tlsv1_2"
 		}
-		print_dbg("Request done")
+		--print_dbg("Request done")
 
 		local json = decoder:get()
-		rPrint(json)
+		--rPrint(json)
 
 		return json and json.result
 	end
