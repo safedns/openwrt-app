@@ -28,6 +28,7 @@ function rPrint(s, l, i) -- recursive Print (structure, limit, indent)
 end	
 --]]
 
+local mime = require "mime"
 local https = require "ssl.https"
 local request = {id = "1", method = "profiles", jsonrpc = "2.0"}
 -- todo: should id change during work ???

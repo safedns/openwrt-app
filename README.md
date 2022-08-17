@@ -3,20 +3,20 @@
 Clone this repo:
 
 ```
-git clone https://github.com/safedns/openwrt $HOME/openwrt
+git clone https://github.com/safedns/openwrt-app.git $HOME/openwrt-app
 ```
 
 Clone LEDE source tree:
 
 ```
-git clone https://github.com/lede-project/source $HOME/source
+git clone https://github.com/lede-project/source.git $HOME/source
 ```
 
 Now add path to the application source to feeds config:
 
 ```
 cd $HOME/source
-echo "src-link custom $HOME/openwrt/src/" >> feeds.conf.default
+echo "src-link custom $HOME/openwrt-app/src/" >> feeds.conf.default
 ```
 
 Run:
@@ -31,8 +31,7 @@ Then set building options for your platform:
 make menuconfig
 ```
 
-You must choose right target architecture, turn on LuCI and SafeDNS-related
-options as modules (`m`, not `y`). When you're done, run building:
+You must choose right target architecture, turn on luci-app-safedns(in LuCi--->Applications), luci-compat(in LuCi--->Modules) and safedns(in Network) options as modules (`M`, not (`Y` or `*`)). When you're done, run building:
 
 ```
 make V=s
